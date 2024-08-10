@@ -9,6 +9,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 axum = { version = "0.7.5", features = ["http2", "query", "tracing"] }
+axum-macros = "0.4.1"
 clap = { version = "4.5.13", features = ["derive"] }
 tokio = { version = "1.39.2", features = ["rt", "rt-multi-thread", "net", "tokio-macros", "fs"] }
 tracing = "0.1.40"

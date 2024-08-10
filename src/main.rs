@@ -1,6 +1,8 @@
 use anyhow::Result;
 use axum::extract::State;
+use axum::response::IntoResponse;
 use axum::{http::StatusCode, routing::get, Router};
+use axum_macros::debug_handler;
 use clap::{Parser, Subcommand};
 use std::net::SocketAddr;
 use std::{
@@ -79,17 +81,37 @@ async fn process_http_serve(path: PathBuf, port: u16) -> Result<()> {
     Ok(())
 }
 
+#[debug_handler]
 async fn file_handler(
     State(state): State<Arc<HttpServeState>>,
     axum::extract::Path(req_path): axum::extract::Path<String>,
-) -> (StatusCode, String) {
+) -> (StatusCode, axum::response::Response) {
     let p: PathBuf = std::path::Path::new(&state.path).join(req_path);
     if !p.exists() {
-        (StatusCode::NOT_FOUND, format!("File {:?} not found!", p))
+        // not found return code = 404
+        (
+            StatusCode::NOT_FOUND,
+            format!("File {:?} not found!", p).into_response(),
+        )
     } else {
-        match tokio::fs::read_to_string(p).await {
-            Ok(content) => (StatusCode::OK, content),
-            Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+        match tokio::fs::read_to_string(&p).await {
+            //read utf8 txt
+            Ok(content) => (StatusCode::OK, content.into_response()), //OK 200
+            Err(e) => match e.kind() {
+                std::io::ErrorKind::InvalidData => match tokio::fs::read(&p).await {
+                    //read octet-stream
+                    Ok(byte_array) => (StatusCode::OK, byte_array.into_response()),
+                    //read octet-stream error
+                    Err(e1) => (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        e1.to_string().into_response(),
+                    ),
+                },
+                _ => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    e.to_string().into_response(),
+                ),
+            },
         }
     }
 }
