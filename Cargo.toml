@@ -14,3 +14,4 @@ clap = { version = "4.5.13", features = ["derive"] }
 tokio = { version = "1.39.2", features = ["rt", "rt-multi-thread", "net", "tokio-macros", "fs"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+urlencoding = "2.1.3"
